@@ -69,27 +69,32 @@
       }
 
       let cb = row.querySelector(".ttbm-check");
-      if (!cb) {
-        const firstCell = row.querySelector("td");
-        if (!firstCell) continue;
-        cb = document.createElement("input");
-        cb.type = "checkbox";
-        cb.className = "ttbm-check";
-        // Read the id at click time — React reuses row nodes, so the
-        // creator under this checkbox can change.
-        cb.addEventListener("click", (e) => {
-          e.stopPropagation();
-          const liveId = row.dataset.ttbmId;
-          if (!liveId) return;
-          if (cb.checked) SELECTED.add(liveId);
-          else SELECTED.delete(liveId);
-          refreshPanel();
-        });
-        firstCell.style.position = "relative";
-        firstCell.prepend(cb);
+      if (sent) {
+        if (cb) cb.remove();
+        SELECTED.delete(id);
+      } else {
+        if (!cb) {
+          const firstCell = row.querySelector("td");
+          if (!firstCell) continue;
+          cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.className = "ttbm-check";
+          // Read the id at click time — React reuses row nodes, so the
+          // creator under this checkbox can change.
+          cb.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const liveId = row.dataset.ttbmId;
+            if (!liveId) return;
+            if (cb.checked) SELECTED.add(liveId);
+            else SELECTED.delete(liveId);
+            refreshPanel();
+          });
+          firstCell.style.position = "relative";
+          firstCell.prepend(cb);
+        }
+        // Keep the visual state in sync with the (possibly re-tagged) row.
+        cb.checked = SELECTED.has(id);
       }
-      // Keep the visual state in sync with the (possibly re-tagged) row.
-      cb.checked = SELECTED.has(id);
     }
   }
 
