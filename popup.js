@@ -85,26 +85,44 @@ document.getElementById("clearSent").addEventListener("click", async () => {
 
 document.getElementById("testServer").addEventListener("click", async () => {
   const el = document.getElementById("serverStatus");
-  const url = document.getElementById("serverUrl").value.trim();
+  const urlInput = document.getElementById("serverUrl");
   const tok = document.getElementById("serverToken").value.trim();
+
+  // Auto-fix missing protocol
+  let url = urlInput.value.trim();
+  if (url && !url.match(/^https?:\/\//)) {
+    url = "https://" + url;
+    urlInput.value = url;
+  }
+
   if (!url || !tok) {
     el.textContent = "❌ Enter Server URL and token first";
     el.className = "server-status err";
     return;
   }
   el.textContent = "Testing…";
-  // Save current URL/name first so the test uses them.
-  await send({
+  el.className = "server-status";
+  const res = await send({
     type: "SAVE_SETTINGS",
     settings: {
-      serverUrl: document.getElementById("serverUrl").value.trim(),
+      serverUrl: url,
       employee: document.getElementById("employee").value.trim(),
-      serverToken: document.getElementById("serverToken").value.trim(),
+      serverToken: tok,
     },
-  });
-  const res = await send({ type: "TEST_SERVER" });
-  el.textContent = res && res.ok ? "✅ Connected to server" : "❌ " + ((res && res.detail) || "failed");
-  el.className = "server-status " + (res && res.ok ? "ok" : "err");
+  }).catch(() => null);
+  if (!res) {
+    el.textContent = "❌ Extension error — try reloading";
+    el.className = "server-status err";
+    return;
+  }
+  const tr = await send({ type: "TEST_SERVER" }).catch(() => null);
+  if (!tr) {
+    el.textContent = "❌ No response from extension background";
+    el.className = "server-status err";
+    return;
+  }
+  el.textContent = tr.ok ? "✅ Connected to server" : "❌ " + (tr.detail || "connection failed");
+  el.className = "server-status " + (tr.ok ? "ok" : "err");
 });
 
 refresh();
