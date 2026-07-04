@@ -25,17 +25,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Login · Bulk Messenger Panel</title>
+  <title>Login · Bulk Messenger</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body class="login-body">
-  <form class="login-card" method="post">
-    <h1>📨 Bulk Messenger</h1>
-    <p class="sub">Team dashboard login</p>
-    <?php if ($error): ?><div class="alert"><?= h($error) ?></div><?php endif; ?>
-    <label>Username<input name="username" autofocus required /></label>
-    <label>Password<input name="password" type="password" required /></label>
-    <button type="submit">Login</button>
-  </form>
+  <div class="login-wrap">
+    <div class="login-logo">
+      <div class="login-logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+      </div>
+      <span class="login-logo-text">Bulk Messenger</span>
+    </div>
+
+    <form class="login-card" method="post">
+      <h2>Welcome back</h2>
+      <p class="sub">Sign in to the team dashboard</p>
+
+      <?php if ($error): ?><div class="alert err"><?= h($error) ?></div><?php endif; ?>
+
+      <div class="form-field">
+        <label for="username">Username</label>
+        <input id="username" name="username" autofocus required autocomplete="username" placeholder="e.g. ashir" />
+      </div>
+      <div class="form-field">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" required autocomplete="current-password" placeholder="••••••••" />
+      </div>
+
+      <button type="submit" class="btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+        Sign in
+      </button>
+    </form>
+
+    <div class="login-credit">Built by <a href="https://ashirarif.com" target="_blank" rel="noopener">ashirarif.com</a></div>
+  </div>
 </body>
 </html>

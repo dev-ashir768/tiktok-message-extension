@@ -84,91 +84,165 @@ $staffList = $admin
   <meta http-equiv="refresh" content="30" />
 </head>
 <body>
+
   <header class="topbar">
-    <div class="brand">📨 Bulk Messenger <span class="role"><?= $admin ? 'Admin' : 'Staff' ?></span></div>
-    <div class="who">
-      <?= h($me['username']) ?> ·
-      <a href="logout.php">Logout</a>
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+      </div>
+      Bulk Messenger
+      <span class="role-badge <?= $admin ? 'admin' : 'staff' ?>"><?= $admin ? 'Admin' : 'Staff' ?></span>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-user">
+        <div class="avatar"><?= h(mb_substr($me['username'], 0, 2)) ?></div>
+        <span><?= h($me['username']) ?></span>
+      </div>
+      <a href="logout.php" class="logout-link">Sign out</a>
     </div>
   </header>
 
   <main>
     <?php if ($notice): ?><div class="alert ok"><?= h($notice) ?></div><?php endif; ?>
 
-    <h2><?= $admin ? ($filterEmp === '' ? 'Overall Summary' : 'Summary: ' . h($filterEmp)) : 'My Summary' ?></h2>
+    <p class="section-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      <?= $admin ? ($filterEmp === '' ? 'Overall summary' : 'Summary — ' . h($filterEmp)) : 'My summary' ?>
+    </p>
+
     <div class="cards">
-      <div class="card queued"><span class="n"><?= $sum['queued'] ?></span>Queued</div>
-      <div class="card sent"><span class="n"><?= $sum['sent'] ?></span>Sent</div>
-      <div class="card failed"><span class="n"><?= $sum['failed'] ?></span>Failed</div>
-      <div class="card total"><span class="n"><?= $sum['queued'] + $sum['sent'] + $sum['failed'] ?></span>Total</div>
+      <div class="card queued">
+        <span class="n"><?= $sum['queued'] ?></span>
+        <span class="card-label">Queued</span>
+      </div>
+      <div class="card sent">
+        <span class="n"><?= $sum['sent'] ?></span>
+        <span class="card-label">Sent</span>
+      </div>
+      <div class="card failed">
+        <span class="n"><?= $sum['failed'] ?></span>
+        <span class="card-label">Failed</span>
+      </div>
+      <div class="card total">
+        <span class="n"><?= $sum['queued'] + $sum['sent'] + $sum['failed'] ?></span>
+        <span class="card-label">Total</span>
+      </div>
     </div>
 
     <?php if ($admin): ?>
-      <h2>Per-staff breakdown</h2>
-      <table class="grid">
-        <thead><tr><th>Staff</th><th>Queued</th><th>Sent</th><th>Failed</th><th>Total</th><th></th></tr></thead>
-        <tbody>
-        <?php foreach ($perStaff as $emp => $c): $t = $c['queued'] + $c['sent'] + $c['failed']; ?>
-          <tr>
-            <td><b><?= h($emp) ?></b></td>
-            <td><?= $c['queued'] ?></td>
-            <td class="g"><?= $c['sent'] ?></td>
-            <td class="r"><?= $c['failed'] ?></td>
-            <td><?= $t ?></td>
-            <td><a href="?emp=<?= urlencode($emp) ?>">view</a></td>
-          </tr>
-        <?php endforeach; ?>
-        <?php if (!$perStaff): ?><tr><td colspan="6" class="muted">No data available yet.</td></tr><?php endif; ?>
-        </tbody>
-      </table>
+      <p class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Per-staff breakdown
+      </p>
+
+      <div class="table-wrap" style="margin-bottom:12px;">
+        <table class="grid">
+          <thead>
+            <tr>
+              <th>Staff</th>
+              <th>Queued</th>
+              <th>Sent</th>
+              <th>Failed</th>
+              <th>Total</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+          <?php foreach ($perStaff as $emp => $c): $t = $c['queued'] + $c['sent'] + $c['failed']; ?>
+            <tr>
+              <td><strong><?= h($emp) ?></strong></td>
+              <td style="color:#fbbf24;font-weight:600;"><?= $c['queued'] ?></td>
+              <td class="g"><?= $c['sent'] ?></td>
+              <td class="r"><?= $c['failed'] ?></td>
+              <td><?= $t ?></td>
+              <td><a href="?emp=<?= urlencode($emp) ?>" class="view-link">View</a></td>
+            </tr>
+          <?php endforeach; ?>
+          <?php if (!$perStaff): ?>
+            <tr><td colspan="6" class="muted" style="padding:20px 16px;">No data yet. Staff need to start sending messages.</td></tr>
+          <?php endif; ?>
+          </tbody>
+        </table>
+      </div>
 
       <details class="addstaff">
-        <summary>➕ Add new staff or admin</summary>
-        <form method="post" class="inline-form">
-          <input type="hidden" name="do" value="add_staff" />
-          <input name="new_username" placeholder="username (e.g. ali)" required />
-          <input name="new_password" type="text" placeholder="password (min 4)" required />
-          <select name="new_role"><option value="staff">staff</option><option value="admin">admin</option></select>
-          <button type="submit">Add</button>
-        </form>
-        <p class="hint">Note: Staff members must enter their exact panel username in the extension's "Your name" field for their tracking to match.</p>
+        <summary>Add new staff or admin</summary>
+        <div class="addstaff-body">
+          <form method="post" class="inline-form">
+            <input type="hidden" name="do" value="add_staff" />
+            <input name="new_username" placeholder="username" required />
+            <input name="new_password" type="text" placeholder="password (min 4)" required />
+            <select name="new_role">
+              <option value="staff">Staff</option>
+              <option value="admin">Admin</option>
+            </select>
+            <button type="submit">Add user</button>
+          </form>
+          <p class="hint">Staff must enter their exact username in the extension's "Your name" field for tracking to match.</p>
+        </div>
       </details>
     <?php endif; ?>
 
-    <h2>Records</h2>
+    <p class="section-title" style="margin-top:28px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Records
+    </p>
+
     <form method="get" class="filters">
       <?php if ($admin): ?>
         <select name="emp" onchange="this.form.submit()">
-          <option value="">— all staff —</option>
+          <option value="">All staff</option>
           <?php foreach ($staffList as $s): ?>
             <option value="<?= h($s) ?>" <?= $filterEmp === $s ? 'selected' : '' ?>><?= h($s) ?></option>
           <?php endforeach; ?>
         </select>
       <?php endif; ?>
       <select name="status" onchange="this.form.submit()">
-        <option value="">— all status —</option>
+        <option value="">All status</option>
         <?php foreach (['queued', 'sent', 'failed'] as $st): ?>
-          <option value="<?= $st ?>" <?= $statusFilter === $st ? 'selected' : '' ?>><?= $st ?></option>
+          <option value="<?= $st ?>" <?= $statusFilter === $st ? 'selected' : '' ?>><?= ucfirst($st) ?></option>
         <?php endforeach; ?>
       </select>
-      <span class="muted">latest 500</span>
+      <span class="muted">Showing latest 500</span>
     </form>
 
-    <table class="grid">
-      <thead><tr><th>Creator</th><th>Status</th><?php if ($admin): ?><th>Staff</th><?php endif; ?><th>Detail</th><th>Updated</th></tr></thead>
-      <tbody>
-      <?php foreach ($records as $r): ?>
-        <tr>
-          <td><b>@<?= h($r['handle'] ?: $r['creator_id']) ?></b><?= $r['nickname'] ? ' · ' . h($r['nickname']) : '' ?></td>
-          <td><span class="pill <?= h($r['status']) ?>"><?= h($r['status']) ?></span></td>
-          <?php if ($admin): ?><td><?= h($r['employee']) ?></td><?php endif; ?>
-          <td class="muted"><?= h($r['detail']) ?></td>
-          <td class="muted"><?= h($r['updated_at']) ?></td>
-        </tr>
-      <?php endforeach; ?>
-      <?php if (!$records): ?><tr><td colspan="5" class="muted">No records found.</td></tr><?php endif; ?>
-      </tbody>
-    </table>
+    <div class="table-wrap">
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Creator</th>
+            <th>Status</th>
+            <?php if ($admin): ?><th>Staff</th><?php endif; ?>
+            <th>Detail</th>
+            <th>Updated</th>
+          </tr>
+        </thead>
+        <tbody>
+        <?php foreach ($records as $r): ?>
+          <tr>
+            <td>
+              <strong>@<?= h($r['handle'] ?: $r['creator_id']) ?></strong>
+              <?php if ($r['nickname']): ?><span class="muted"> · <?= h($r['nickname']) ?></span><?php endif; ?>
+            </td>
+            <td><span class="pill <?= h($r['status']) ?>"><?= h($r['status']) ?></span></td>
+            <?php if ($admin): ?><td><?= h($r['employee']) ?></td><?php endif; ?>
+            <td class="muted"><?= h($r['detail']) ?></td>
+            <td class="muted"><?= h($r['updated_at']) ?></td>
+          </tr>
+        <?php endforeach; ?>
+        <?php if (!$records): ?>
+          <tr><td colspan="5" class="muted" style="padding:20px 16px;">No records found.</td></tr>
+        <?php endif; ?>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="page-footer">
+      Built by <a href="https://ashirarif.com" target="_blank" rel="noopener">ashirarif.com</a> · Bulk Messenger Panel
+    </div>
   </main>
+
 </body>
 </html>

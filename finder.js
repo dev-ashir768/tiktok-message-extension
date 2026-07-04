@@ -107,19 +107,62 @@
     panel = document.createElement("div");
     panel.className = "ttbm-panel";
     panel.innerHTML = `
-      <div class="ttbm-title">📨 Bulk Messenger</div>
-      <div class="ttbm-row">
-        <button class="ttbm-btn" id="ttbm-select-all">Select page</button>
-        <button class="ttbm-btn" id="ttbm-clear">Clear</button>
+      <div class="ttbm-header">
+        <div class="ttbm-header-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <span class="ttbm-title">Bulk Messenger</span>
+        <span class="ttbm-dot" id="ttbm-dot"></span>
       </div>
-      <div class="ttbm-count" id="ttbm-count">0 selected</div>
-      <button class="ttbm-btn ttbm-primary" id="ttbm-add">➕ Add to queue</button>
-      <div class="ttbm-status" id="ttbm-status"></div>
-      <div class="ttbm-row">
-        <button class="ttbm-btn ttbm-start" id="ttbm-start">▶ Start</button>
-        <button class="ttbm-btn ttbm-stop" id="ttbm-stop">⏸ Stop</button>
+
+      <div class="ttbm-stats">
+        <div class="ttbm-stat">
+          <span class="ttbm-stat-val" id="ttbm-stat-queue">0</span>
+          <span class="ttbm-stat-lbl">Queue</span>
+        </div>
+        <div class="ttbm-stat">
+          <span class="ttbm-stat-val" id="ttbm-stat-sent">0</span>
+          <span class="ttbm-stat-lbl">Sent</span>
+        </div>
+        <div class="ttbm-stat">
+          <span class="ttbm-stat-val" id="ttbm-stat-failed">0</span>
+          <span class="ttbm-stat-lbl">Failed</span>
+        </div>
       </div>
-      <div class="ttbm-hint">Template & settings: extension popup icon</div>
+
+      <div class="ttbm-sel-row">
+        <span class="ttbm-count" id="ttbm-count">0 selected</span>
+        <button class="ttbm-btn ttbm-btn-ghost" id="ttbm-select-all" aria-label="Select all on page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12l2 2 4-4"/></svg>
+          All
+        </button>
+        <button class="ttbm-btn ttbm-btn-ghost" id="ttbm-clear" aria-label="Clear selection">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <button class="ttbm-btn ttbm-btn-primary" id="ttbm-add" aria-label="Add selected to queue">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add to queue
+      </button>
+
+      <div class="ttbm-status" id="ttbm-status">Idle — select creators to start</div>
+
+      <div class="ttbm-row">
+        <button class="ttbm-btn ttbm-btn-start" id="ttbm-start" aria-label="Start campaign">
+          <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+          Start
+        </button>
+        <button class="ttbm-btn ttbm-btn-stop" id="ttbm-stop" aria-label="Stop campaign">
+          <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+          Stop
+        </button>
+      </div>
+
+      <div class="ttbm-hint">Settings &amp; template → extension popup</div>
+      <div class="ttbm-credit">Built by <a href="https://ashirarif.com" target="_blank" rel="noopener" class="ttbm-credit-link">ashirarif.com</a></div>
     `;
     document.body.appendChild(panel);
 
@@ -151,7 +194,7 @@
         if (res && res.ok) {
           const dup = res.rejected ? ` · ${res.rejected} already taken` : "";
           const off = res.offline ? " (local only)" : "";
-          setStatus(`${res.added} added · queue total: ${res.total}${dup}${off}`);
+          setStatus(`${res.added} added to queue · total: ${res.total}${dup}${off}`);
           SELECTED.clear();
           document.querySelectorAll(".ttbm-check").forEach((cb) => (cb.checked = false));
           refreshPanel();
@@ -188,10 +231,26 @@
   function pollStatus() {
     chrome.runtime.sendMessage({ type: "GET_STATUS" }, (res) => {
       if (!res || !res.ok) return;
-      const running = res.running ? "🟢 running" : "⚪ idle";
-      setStatus(
-        `${running} · queue: ${res.pending} · sent: ${res.sent} · failed: ${res.failed} · today: ${res.sentToday}/${res.dailyCap}`
-      );
+      if (!panel) return;
+
+      // Update stat strip
+      const qEl = panel.querySelector("#ttbm-stat-queue");
+      const sEl = panel.querySelector("#ttbm-stat-sent");
+      const fEl = panel.querySelector("#ttbm-stat-failed");
+      if (qEl) qEl.textContent = res.pending ?? 0;
+      if (sEl) sEl.textContent = res.sent ?? 0;
+      if (fEl) fEl.textContent = res.failed ?? 0;
+
+      // Live dot
+      const dot = panel.querySelector("#ttbm-dot");
+      if (dot) dot.classList.toggle("active", !!res.running);
+
+      // Status text
+      if (res.running) {
+        setStatus(`Running · ${res.active || 0} tab${res.active === 1 ? "" : "s"} active · today ${res.sentToday}/${res.dailyCap}`);
+      } else {
+        setStatus(res.pending > 0 ? `Idle · ${res.pending} in queue` : "Idle — select creators to start");
+      }
     });
   }
 
