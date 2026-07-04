@@ -7,6 +7,7 @@
   let SENT_IDS = new Set(); // creators already messaged (persisted)
   let QUEUED_IDS = new Set(); // creators currently waiting in the queue
   let isInitialized = false;
+  let currentMarket = "100";
   let pollIntervalId = null;
   let highlightIntervalId = null;
   let injectIntervalId = null;
@@ -40,7 +41,7 @@
         id,
         handle: rec.handle || "",
         nickname: rec.nickname || "",
-        market: new URLSearchParams(location.search).get("market") || "100",
+        market: currentMarket,
         origin: location.origin,
       });
 
@@ -173,11 +174,13 @@
   }
 
   function setStatus(txt) {
+    if (!panel) return;
     const el = panel.querySelector("#ttbm-status");
     if (el) el.textContent = txt;
   }
 
   function refreshPanel() {
+    if (!panel) return;
     const el = panel.querySelector("#ttbm-count");
     if (el) el.textContent = `${SELECTED.size} selected`;
   }
@@ -210,6 +213,7 @@
   function start() {
     if (isInitialized) return;
     isInitialized = true;
+    currentMarket = new URLSearchParams(location.search).get("market") || "100";
 
     buildPanel();
     injectCheckboxes();
@@ -236,6 +240,7 @@
     if (highlightIntervalId) { clearInterval(highlightIntervalId); highlightIntervalId = null; }
     if (injectIntervalId) { clearInterval(injectIntervalId); injectIntervalId = null; }
 
+    clearTimeout(observer._t);
     observer.disconnect();
 
     document.querySelectorAll(".ttbm-check").forEach((cb) => cb.remove());
@@ -262,6 +267,9 @@
   chrome.storage.onChanged.addListener((changes, areaName) => {
     if (areaName === "local" && changes.settings) {
       checkAndToggle();
+    }
+    if (areaName === "local" && changes.queue && isInitialized) {
+      refreshHighlights();
     }
   });
 

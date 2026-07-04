@@ -376,9 +376,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
 
     if (msg.type === "SAVE_SETTINGS") {
-      const changed = s.settings.serverUrl !== msg.settings.serverUrl ||
-                      s.settings.employee !== msg.settings.employee ||
-                      s.settings.serverToken !== msg.settings.serverToken;
+      const changed = (msg.settings.serverUrl !== undefined && s.settings.serverUrl !== msg.settings.serverUrl) ||
+                      (msg.settings.employee !== undefined && s.settings.employee !== msg.settings.employee) ||
+                      (msg.settings.serverToken !== undefined && s.settings.serverToken !== msg.settings.serverToken);
       s.settings = { ...s.settings, ...msg.settings };
       if (changed) {
         s.settings.serverConnected = false;
@@ -390,6 +390,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
     if (msg.type === "CLEAR_QUEUE") {
       await stopCampaign(s);
+      serverFetch(s.settings, "clear_queued", {}); // fire-and-forget: remove queued/failed from server
       await chrome.storage.local.set({ queue: [], log: [], campaign: s.campaign });
       await updateBadge(s);
       sendResponse({ ok: true });

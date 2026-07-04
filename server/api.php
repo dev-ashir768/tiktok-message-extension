@@ -135,6 +135,11 @@ try {
         out(['ok' => true]);
     }
 
+    if ($action === 'clear_queued') {
+        $pdo->exec("DELETE FROM creators WHERE status IN ('queued', 'failed')");
+        out(['ok' => true]);
+    }
+
     out(['ok' => false, 'error' => 'unknown action: ' . $action]);
 } catch (Throwable $e) {
     http_response_code(500);
