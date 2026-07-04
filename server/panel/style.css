@@ -525,6 +525,151 @@ main {
   line-height: 1.5;
 }
 
+/* ── DataTable ───────────────────────────────────────────────────────────── */
+.dt-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.dt-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 0 12px;
+  flex: 1;
+  min-width: 220px;
+  max-width: 360px;
+  transition: border-color 150ms ease;
+}
+
+.dt-search-wrap:focus-within { border-color: var(--teal); }
+.dt-search-wrap svg { width: 14px; height: 14px; color: var(--text3); flex-shrink: 0; }
+
+#dt-search {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 13px;
+  padding: 9px 0;
+  font-family: inherit;
+}
+
+#dt-search::placeholder { color: var(--text3); }
+
+.dt-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dt-filters select,
+#dt-page-size {
+  padding: 7px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 150ms ease;
+}
+
+.dt-filters select:focus { border-color: var(--teal); }
+
+/* Sortable column headers */
+.sortable {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.sortable:hover { color: var(--text); }
+
+.sort-icon {
+  margin-left: 4px;
+  opacity: 0.4;
+  font-size: 11px;
+}
+
+.sortable.sort-asc .sort-icon,
+.sortable.sort-desc .sort-icon { opacity: 1; color: var(--teal); }
+
+/* DataTable footer */
+.dt-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dt-info {
+  font-size: 12px;
+  color: var(--text2);
+}
+
+.dt-pagination {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.dt-page-btn {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text2);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.dt-page-btn:hover:not(.disabled):not(.active) {
+  background: var(--surface2);
+  border-color: var(--teal);
+  color: var(--teal);
+}
+
+.dt-page-btn.active {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: #fff;
+}
+
+.dt-page-btn.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.dt-ellipsis {
+  color: var(--text3);
+  font-size: 12px;
+  padding: 0 4px;
+}
+
+.dt-empty {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--text2);
+  font-size: 13px;
+  border-top: 1px solid var(--border);
+}
+
 /* ── Footer credit ───────────────────────────────────────────────────────── */
 .page-footer {
   text-align: center;

@@ -190,38 +190,54 @@ $staffList = $admin
       Records
     </p>
 
-    <form method="get" class="filters">
-      <?php if ($admin): ?>
-        <select name="emp" onchange="this.form.submit()">
-          <option value="">All staff</option>
-          <?php foreach ($staffList as $s): ?>
-            <option value="<?= h($s) ?>" <?= $filterEmp === $s ? 'selected' : '' ?>><?= h($s) ?></option>
-          <?php endforeach; ?>
+    <!-- DataTable toolbar -->
+    <div class="dt-toolbar">
+      <div class="dt-search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="dt-search" type="text" placeholder="Search creator, handle, detail…" autocomplete="off" />
+      </div>
+      <div class="dt-filters">
+        <?php if ($admin): ?>
+          <select id="dt-emp">
+            <option value="">All staff</option>
+            <?php foreach ($staffList as $s): ?>
+              <option value="<?= h($s) ?>" <?= $filterEmp === $s ? 'selected' : '' ?>><?= h($s) ?></option>
+            <?php endforeach; ?>
+          </select>
+        <?php endif; ?>
+        <select id="dt-status">
+          <option value="">All status</option>
+          <option value="queued" <?= $statusFilter==='queued'?'selected':'' ?>>Queued</option>
+          <option value="sent"   <?= $statusFilter==='sent'  ?'selected':'' ?>>Sent</option>
+          <option value="failed" <?= $statusFilter==='failed'?'selected':'' ?>>Failed</option>
         </select>
-      <?php endif; ?>
-      <select name="status" onchange="this.form.submit()">
-        <option value="">All status</option>
-        <?php foreach (['queued', 'sent', 'failed'] as $st): ?>
-          <option value="<?= $st ?>" <?= $statusFilter === $st ? 'selected' : '' ?>><?= ucfirst($st) ?></option>
-        <?php endforeach; ?>
-      </select>
-      <span class="muted">Showing latest 500</span>
-    </form>
+        <select id="dt-page-size">
+          <option value="25">25 / page</option>
+          <option value="50">50 / page</option>
+          <option value="100">100 / page</option>
+          <option value="250">250 / page</option>
+        </select>
+      </div>
+    </div>
 
     <div class="table-wrap">
-      <table class="grid">
+      <table class="grid" id="dt-table">
         <thead>
           <tr>
-            <th>Creator</th>
-            <th>Status</th>
-            <?php if ($admin): ?><th>Staff</th><?php endif; ?>
+            <th data-col="0" class="sortable">Creator <span class="sort-icon">⇅</span></th>
+            <th data-col="1" class="sortable">Status <span class="sort-icon">⇅</span></th>
+            <?php if ($admin): ?><th data-col="2" class="sortable">Staff <span class="sort-icon">⇅</span></th><?php endif; ?>
             <th>Detail</th>
-            <th>Updated</th>
+            <th data-col="<?= $admin ? 4 : 3 ?>" class="sortable">Updated <span class="sort-icon">⇅</span></th>
           </tr>
         </thead>
-        <tbody>
+        <tbody id="dt-body">
         <?php foreach ($records as $r): ?>
-          <tr>
+          <tr
+            data-creator="<?= h(strtolower('@'.($r['handle'] ?: $r['creator_id']).' '.($r['nickname'] ?? ''))) ?>"
+            data-status="<?= h($r['status']) ?>"
+            data-emp="<?= h(strtolower($r['employee'] ?? '')) ?>"
+            data-updated="<?= h($r['updated_at']) ?>">
             <td>
               <strong>@<?= h($r['handle'] ?: $r['creator_id']) ?></strong>
               <?php if ($r['nickname']): ?><span class="muted"> · <?= h($r['nickname']) ?></span><?php endif; ?>
@@ -232,12 +248,122 @@ $staffList = $admin
             <td class="muted"><?= h($r['updated_at']) ?></td>
           </tr>
         <?php endforeach; ?>
-        <?php if (!$records): ?>
-          <tr><td colspan="5" class="muted" style="padding:20px 16px;">No records found.</td></tr>
-        <?php endif; ?>
         </tbody>
       </table>
+      <div id="dt-empty" class="dt-empty" style="display:none;">No records match your filters.</div>
     </div>
+
+    <!-- Pagination -->
+    <div class="dt-footer">
+      <span id="dt-info" class="dt-info"></span>
+      <div id="dt-pagination" class="dt-pagination"></div>
+    </div>
+
+    <script>
+    (function() {
+      const tbody      = document.getElementById('dt-body');
+      const searchEl   = document.getElementById('dt-search');
+      const statusEl   = document.getElementById('dt-status');
+      const empEl      = document.getElementById('dt-emp');
+      const pageSzEl   = document.getElementById('dt-page-size');
+      const infoEl     = document.getElementById('dt-info');
+      const paginEl    = document.getElementById('dt-pagination');
+      const emptyEl    = document.getElementById('dt-empty');
+      const ths        = document.querySelectorAll('#dt-table thead th.sortable');
+
+      let rows = Array.from(tbody.querySelectorAll('tr'));
+      let sortCol = -1, sortAsc = true, page = 1;
+
+      function cellText(row, colIdx) {
+        const cells = row.querySelectorAll('td');
+        return cells[colIdx] ? cells[colIdx].textContent.trim().toLowerCase() : '';
+      }
+
+      function render() {
+        const q      = searchEl ? searchEl.value.trim().toLowerCase() : '';
+        const status = statusEl ? statusEl.value : '';
+        const emp    = empEl    ? empEl.value.toLowerCase() : '';
+        const pageSize = parseInt(pageSzEl.value);
+
+        let visible = rows.filter(r => {
+          if (q && !r.dataset.creator.includes(q) &&
+              !r.dataset.status.includes(q) &&
+              !(r.dataset.emp || '').includes(q) &&
+              !r.querySelectorAll('td')[<?= $admin ? 3 : 2 ?>].textContent.toLowerCase().includes(q)) return false;
+          if (status && r.dataset.status !== status) return false;
+          if (emp    && (r.dataset.emp || '') !== emp) return false;
+          return true;
+        });
+
+        // Sort
+        if (sortCol >= 0) {
+          visible.sort((a, b) => {
+            const av = cellText(a, sortCol), bv = cellText(b, sortCol);
+            return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+          });
+        }
+
+        const total = visible.length;
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+        page = Math.min(page, totalPages);
+        const start = (page - 1) * pageSize;
+        const pageRows = visible.slice(start, start + pageSize);
+
+        // Hide all, show page slice
+        rows.forEach(r => r.style.display = 'none');
+        pageRows.forEach(r => r.style.display = '');
+
+        emptyEl.style.display = total === 0 ? '' : 'none';
+        infoEl.textContent = total === 0 ? '' :
+          'Showing ' + (start + 1) + '–' + Math.min(start + pageSize, total) + ' of ' + total + ' records';
+
+        // Pagination buttons
+        paginEl.innerHTML = '';
+        if (totalPages <= 1) return;
+
+        function btn(label, pg, disabled, active) {
+          const b = document.createElement('button');
+          b.textContent = label;
+          b.className = 'dt-page-btn' + (active ? ' active' : '') + (disabled ? ' disabled' : '');
+          b.disabled = disabled;
+          b.onclick = () => { page = pg; render(); };
+          paginEl.appendChild(b);
+        }
+
+        btn('‹', page - 1, page === 1, false);
+        const range = 2;
+        for (let i = 1; i <= totalPages; i++) {
+          if (i === 1 || i === totalPages || (i >= page - range && i <= page + range)) {
+            btn(i, i, false, i === page);
+          } else if (i === page - range - 1 || i === page + range + 1) {
+            const s = document.createElement('span');
+            s.className = 'dt-ellipsis'; s.textContent = '…';
+            paginEl.appendChild(s);
+          }
+        }
+        btn('›', page + 1, page === totalPages, false);
+      }
+
+      // Sort on header click
+      ths.forEach(th => {
+        th.addEventListener('click', () => {
+          const col = parseInt(th.dataset.col);
+          if (sortCol === col) sortAsc = !sortAsc;
+          else { sortCol = col; sortAsc = true; }
+          ths.forEach(t => { t.classList.remove('sort-asc','sort-desc'); t.querySelector('.sort-icon').textContent = '⇅'; });
+          th.classList.add(sortAsc ? 'sort-asc' : 'sort-desc');
+          th.querySelector('.sort-icon').textContent = sortAsc ? '↑' : '↓';
+          page = 1; render();
+        });
+      });
+
+      [searchEl, statusEl, empEl, pageSzEl].forEach(el => {
+        if (el) el.addEventListener('input', () => { page = 1; render(); });
+      });
+
+      render();
+    })();
+    </script>
 
     <div class="page-footer">
       Built by <a href="https://ashirarif.com" target="_blank" rel="noopener">ashirarif.com</a> · Bulk Messenger Panel
