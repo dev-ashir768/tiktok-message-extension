@@ -2,9 +2,13 @@
 // Injects a checkbox on every creator row and a floating panel to queue them.
 
 // Reload the page if the extension is unloaded/reloaded so stale injected UI is cleared.
+// Only reload if the port was alive for at least 2s — avoids reload loops on first install
+// when the service worker hasn't warmed up yet.
 try {
   const _port = chrome.runtime.connect({ name: "ttbm-keepalive" });
-  _port.onDisconnect.addListener(() => location.reload());
+  let _alive = false;
+  setTimeout(() => { _alive = true; }, 2000);
+  _port.onDisconnect.addListener(() => { if (_alive) location.reload(); });
 } catch (_) {}
 
 (() => {
