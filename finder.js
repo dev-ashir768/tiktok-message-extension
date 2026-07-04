@@ -6,6 +6,10 @@
   const ROW_DATA = new Map(); // creator id -> {id, handle, nickname}
   let SENT_IDS = new Set(); // creators already messaged (persisted)
   let QUEUED_IDS = new Set(); // creators currently waiting in the queue
+  let isInitialized = false;
+  let pollIntervalId = null;
+  let highlightIntervalId = null;
+  let injectIntervalId = null;
 
   // Creator data is extracted by finder-main.js (MAIN world) and exposed
   // as data-ttbm-* attributes on each row.
@@ -161,11 +165,6 @@
     panel.querySelector("#ttbm-stop").addEventListener("click", () => {
       chrome.runtime.sendMessage({ type: "STOP_CAMPAIGN" }, () => setStatus("Stopped"));
     });
-
-    setInterval(pollStatus, 5000);
-    setInterval(refreshHighlights, 8000);
-    pollStatus();
-    refreshHighlights();
   }
 
   function setStatus(txt) {
@@ -203,14 +202,64 @@
     observer._t = setTimeout(injectCheckboxes, 400);
   });
 
-  function init() {
+  function start() {
+    if (isInitialized) return;
+    isInitialized = true;
+
     buildPanel();
     injectCheckboxes();
     observer.observe(document.body, { childList: true, subtree: true });
-    // finder-main.js tags rows asynchronously — keep retrying until tagged.
-    setInterval(injectCheckboxes, 1500);
+
+    pollIntervalId = setInterval(pollStatus, 5000);
+    highlightIntervalId = setInterval(refreshHighlights, 8000);
+    injectIntervalId = setInterval(injectCheckboxes, 1500);
+
+    pollStatus();
+    refreshHighlights();
   }
 
-  if (document.readyState === "complete") setTimeout(init, 1500);
-  else window.addEventListener("load", () => setTimeout(init, 1500));
+  function stop() {
+    if (!isInitialized) return;
+    isInitialized = false;
+
+    if (panel) {
+      panel.remove();
+      panel = null;
+    }
+
+    if (pollIntervalId) { clearInterval(pollIntervalId); pollIntervalId = null; }
+    if (highlightIntervalId) { clearInterval(highlightIntervalId); highlightIntervalId = null; }
+    if (injectIntervalId) { clearInterval(injectIntervalId); injectIntervalId = null; }
+
+    observer.disconnect();
+
+    document.querySelectorAll(".ttbm-check").forEach((cb) => cb.remove());
+    document.querySelectorAll(".ttbm-badge").forEach((badge) => badge.remove());
+    document.querySelectorAll("tr").forEach((row) => {
+      row.classList.remove("ttbm-sent-row", "ttbm-queued-row");
+    });
+
+    SELECTED.clear();
+    ROW_DATA.clear();
+  }
+
+  function checkAndToggle() {
+    chrome.storage.local.get({ settings: {} }, (res) => {
+      const isConnected = !!(res && res.settings && res.settings.serverConnected);
+      if (isConnected) {
+        start();
+      } else {
+        stop();
+      }
+    });
+  }
+
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === "local" && changes.settings) {
+      checkAndToggle();
+    }
+  });
+
+  if (document.readyState === "complete") setTimeout(checkAndToggle, 1500);
+  else window.addEventListener("load", () => setTimeout(checkAndToggle, 1500));
 })();

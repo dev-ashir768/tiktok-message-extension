@@ -18,6 +18,7 @@ const DEFAULTS = {
   serverUrl: "", // e.g. https://yourdomain.com/server/api.php (empty = local only)
   employee: "", // this operator's name; must match their panel username
   serverToken: "", // shared secret, must equal API_TOKEN in server/config.php
+  serverConnected: false,
 };
 
 // Talk to the shared PHP/MySQL backend. Returns {ok:false, offline:true} when
@@ -375,7 +376,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
 
     if (msg.type === "SAVE_SETTINGS") {
+      const changed = s.settings.serverUrl !== msg.settings.serverUrl ||
+                      s.settings.employee !== msg.settings.employee ||
+                      s.settings.serverToken !== msg.settings.serverToken;
       s.settings = { ...s.settings, ...msg.settings };
+      if (changed) {
+        s.settings.serverConnected = false;
+      }
       await chrome.storage.local.set({ settings: s.settings });
       sendResponse({ ok: true });
       return;
@@ -416,7 +423,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
     if (msg.type === "TEST_SERVER") {
       const r = await serverFetch(s.settings, "ping", {});
-      sendResponse({ ok: !!(r && r.ok), detail: r && r.error ? r.error : (r && r.offline ? "no server URL set" : "connected") });
+      const ok = !!(r && r.ok);
+      s.settings.serverConnected = ok;
+      await chrome.storage.local.set({ settings: s.settings });
+      sendResponse({ ok, detail: r && r.error ? r.error : (r && r.offline ? "no server URL set" : "connected") });
       return;
     }
 
