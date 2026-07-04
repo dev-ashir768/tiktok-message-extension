@@ -64,6 +64,12 @@ async function readState() {
     log: [],
     sentIds: {}, // creator_id -> timestamp; persists so pages can highlight
   });
+  // Settings also live in chrome.storage.sync so they survive extension removal/reinstall.
+  // Sync copy takes priority for credential fields on first load after reinstall.
+  try {
+    const synced = await chrome.storage.sync.get({ settings: null });
+    if (synced.settings) s.settings = { ...DEFAULTS, ...synced.settings, ...s.settings };
+  } catch (_) {}
   s.settings = { ...DEFAULTS, ...s.settings };
   if (!s.campaign.workers) s.campaign.workers = {};
   if (s.stats.date !== todayKey()) s.stats = { date: todayKey(), sentToday: 0 };
@@ -384,6 +390,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         s.settings.serverConnected = false;
       }
       await chrome.storage.local.set({ settings: s.settings });
+      // Persist credentials to sync storage so they survive extension removal/reinstall.
+      try {
+        const { serverUrl, employee, serverToken } = s.settings;
+        await chrome.storage.sync.set({ settings: { serverUrl, employee, serverToken } });
+      } catch (_) {}
       sendResponse({ ok: true });
       return;
     }
