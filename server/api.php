@@ -138,8 +138,19 @@ try {
         out(['ok' => true]);
     }
 
+    if ($action === 'retry_failed') {
+        // Reset this employee's failed creators back to queued so they can be re-sent.
+        $stmt = $pdo->prepare(
+            "UPDATE creators SET status = 'queued', detail = '', updated_at = CURRENT_TIMESTAMP
+             WHERE status = 'failed' AND employee = ?"
+        );
+        $stmt->execute([$employee]);
+        out(['ok' => true, 'reset' => $stmt->rowCount()]);
+    }
+
     out(['ok' => false, 'error' => 'unknown action: ' . $action]);
 } catch (Throwable $e) {
+    error_log('ttbm api error: ' . $e->getMessage());
     http_response_code(500);
-    out(['ok' => false, 'error' => $e->getMessage()]);
+    out(['ok' => false, 'error' => 'internal server error']);
 }

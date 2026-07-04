@@ -8,7 +8,6 @@
     "https://partner.us.tiktokshop.com/*",
     "https://partner.tiktokshop.com/*",
     "https://partner.eu.tiktokshop.com/*",
-    "http://*/*",
     "https://*/*"
   ],
   "background": {

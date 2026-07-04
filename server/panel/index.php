@@ -12,8 +12,8 @@ if ($admin && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['do'] ?? '') === 
     $u = trim($_POST['new_username'] ?? '');
     $p = (string)($_POST['new_password'] ?? '');
     $role = ($_POST['new_role'] ?? 'staff') === 'admin' ? 'admin' : 'staff';
-    if ($u === '' || strlen($p) < 4) {
-        $notice = 'Username is required and password must be at least 4 characters.';
+    if ($u === '' || strlen($p) < 12) {
+        $notice = 'Username is required and password must be at least 12 characters.';
     } else {
         try {
             $stmt = $pdo->prepare("INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)");
@@ -173,7 +173,7 @@ $staffList = $admin
           <form method="post" class="inline-form">
             <input type="hidden" name="do" value="add_staff" />
             <input name="new_username" placeholder="username" required />
-            <input name="new_password" type="text" placeholder="password (min 4)" required />
+            <input name="new_password" type="password" placeholder="password (min 12 chars)" required />
             <select name="new_role">
               <option value="staff">Staff</option>
               <option value="admin">Admin</option>

@@ -153,8 +153,8 @@ async function refillPool(s) {
 }
 
 function inflightCount(s) {
-  // Workers currently occupying a send slot but not yet counted in sentToday.
-  return Object.values(s.campaign.workers).filter((w) => w.phase === "sending").length;
+  // Count ALL active workers (loading + ready + sending) to correctly enforce dailyCap.
+  return Object.keys(s.campaign.workers).length;
 }
 
 // Release one ready worker to actually send, if the throttle window is open.
@@ -254,7 +254,12 @@ async function reap(s) {
       if (item) {
         item.status = "failed";
         item.detail = "timeout — chat didn't open / no response";
-        await log(s, "failed", "@" + (item ? item.handle : "?") + " — timeout");
+        await log(s, "failed", "@" + item.handle + " — timeout");
+        // Report timeout to server so dashboard shows correct status.
+        serverFetch(s.settings, "mark_failed", {
+          creator: { id: item.id, handle: item.handle, nickname: item.nickname },
+          detail: "timeout",
+        });
       }
       delete s.campaign.workers[tabId];
       await closeTab(tabId);
@@ -326,13 +331,20 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         return;
       }
 
+      const MAX_QUEUE = 5000;
       let added = 0;
       for (const c of accepted) {
+        if (s.queue.length >= MAX_QUEUE) break;
         if (s.queue.some((q) => q.id === c.id)) continue;
         s.queue.push({ ...c, status: "pending", ts: Date.now() });
         added++;
       }
-      await chrome.storage.local.set({ queue: s.queue });
+      try {
+        await chrome.storage.local.set({ queue: s.queue });
+      } catch (e) {
+        sendResponse({ ok: false, error: "Storage quota exceeded — clear some queue items first." });
+        return;
+      }
       sendResponse({
         ok: true,
         added,
@@ -385,10 +397,25 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       const changed = (msg.settings.serverUrl !== undefined && s.settings.serverUrl !== msg.settings.serverUrl) ||
                       (msg.settings.employee !== undefined && s.settings.employee !== msg.settings.employee) ||
                       (msg.settings.serverToken !== undefined && s.settings.serverToken !== msg.settings.serverToken);
-      s.settings = { ...s.settings, ...msg.settings };
-      if (changed) {
-        s.settings.serverConnected = false;
+      // Validate and sanitize before saving.
+      const raw = { ...s.settings, ...msg.settings };
+      const url = String(raw.serverUrl || "").trim();
+      if (url && !url.match(/^https?:\/\//)) {
+        sendResponse({ ok: false, error: "Server URL must start with https://" });
+        return;
       }
+      s.settings = {
+        ...raw,
+        serverUrl:   url,
+        employee:    String(raw.employee    || "").slice(0, 64).trim(),
+        serverToken: String(raw.serverToken || "").slice(0, 128).trim(),
+        minDelay:    Math.max(30,   Math.min(3600, Number(raw.minDelay)    || 30)),
+        maxDelay:    Math.max(30,   Math.min(3600, Number(raw.maxDelay)    || 60)),
+        dailyCap:    Math.max(1,    Math.min(2000, Number(raw.dailyCap)    || 500)),
+        concurrency: Math.max(1,    Math.min(5,    Number(raw.concurrency) || 3)),
+      };
+      if (s.settings.maxDelay < s.settings.minDelay) s.settings.maxDelay = s.settings.minDelay;
+      if (changed) s.settings.serverConnected = false;
       await chrome.storage.local.set({ settings: s.settings });
       // Persist credentials to sync storage so they survive extension removal/reinstall.
       try {
@@ -443,9 +470,26 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
 
     if (msg.type === "RETRY_FAILED") {
+      const failedItems = s.queue.filter((q) => q.status === "failed");
+      if (failedItems.length === 0) {
+        sendResponse({ ok: true, retried: 0 });
+        return;
+      }
+      // Reset on server so they become claimable again (fire-and-forget, best-effort).
+      serverFetch(s.settings, "retry_failed", {});
+      // Reset locally and auto-start campaign.
       for (const q of s.queue) if (q.status === "failed") q.status = "pending";
-      await chrome.storage.local.set({ queue: s.queue });
-      sendResponse({ ok: true });
+      if (!s.campaign.running) {
+        s.campaign.running = true;
+        s.campaign.workers = {};
+        await log(s, "info", "Campaign auto-started by Retry failed (" + failedItems.length + " items)");
+      }
+      await chrome.storage.local.set({ queue: s.queue, campaign: s.campaign, log: s.log });
+      await refillPool(s);
+      await chrome.storage.local.set({ queue: s.queue, campaign: s.campaign });
+      await updateBadge(s);
+      scheduleTick(5000); // kick off within 5 seconds
+      sendResponse({ ok: true, retried: failedItems.length });
       return;
     }
 

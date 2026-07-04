@@ -10,13 +10,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([$username]);
         $u = $stmt->fetch();
         if ($u && password_verify($password, $u['password_hash'])) {
+            session_regenerate_id(true);
             $_SESSION['user'] = ['id' => $u['id'], 'username' => $u['username'], 'role' => $u['role']];
             header('Location: index.php');
             exit;
         }
         $error = 'Incorrect username or password';
     } catch (Throwable $e) {
-        $error = 'DB error: ' . $e->getMessage();
+        error_log('login error: ' . $e->getMessage());
+        $error = 'A server error occurred. Please try again.';
     }
 }
 ?>
