@@ -1,0 +1,129 @@
+.ttbm-check {
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+  cursor: pointer;
+  accent-color: #0d9488;
+  vertical-align: middle;
+}
+
+/* Already-messaged creators */
+.ttbm-sent-row {
+  background: #ecfdf5 !important;
+}
+.ttbm-sent-row td {
+  background: transparent !important;
+}
+
+/* Creators currently waiting in the queue */
+.ttbm-queued-row {
+  background: #fffbeb !important;
+}
+.ttbm-queued-row td {
+  background: transparent !important;
+}
+
+.ttbm-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+.ttbm-badge-sent {
+  background: #0d9488;
+  color: #fff;
+}
+.ttbm-badge-queued {
+  background: #f59e0b;
+  color: #fff;
+}
+
+.ttbm-panel {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 999999;
+  width: 240px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
+  padding: 14px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+  color: #111827;
+}
+
+.ttbm-title {
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.ttbm-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.ttbm-btn {
+  flex: 1;
+  padding: 7px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #f9fafb;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.ttbm-btn:hover {
+  background: #f3f4f6;
+}
+
+.ttbm-primary {
+  width: 100%;
+  background: #0d9488;
+  border-color: #0d9488;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.ttbm-primary:hover {
+  background: #0f766e;
+}
+
+.ttbm-start {
+  background: #059669;
+  border-color: #059669;
+  color: #fff;
+}
+
+.ttbm-stop {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #fff;
+}
+
+.ttbm-count {
+  margin: 4px 0 8px;
+  font-weight: 600;
+  color: #0d9488;
+}
+
+.ttbm-status {
+  margin: 6px 0;
+  font-size: 11.5px;
+  color: #4b5563;
+  line-height: 1.5;
+  min-height: 16px;
+}
+
+.ttbm-hint {
+  margin-top: 6px;
+  font-size: 10.5px;
+  color: #9ca3af;
+}

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <h1>📨 Bulk Creator Messenger</h1>
+
+  <div class="stats" id="stats">Loading…</div>
+
+  <div class="controls">
+    <button id="start" class="primary">▶ Start</button>
+    <button id="stop" class="danger">⏸ Stop</button>
+  </div>
+
+  <div class="server-box">
+    <label>Shared server URL (team sync)
+      <span class="hint">Sab employees ye same URL lagayein, e.g. http://192.168.1.50/server/api.php. Khali = local only.</span>
+      <input type="text" id="serverUrl" placeholder="http://HOST/server/api.php" />
+    </label>
+    <label>Your name (employee)
+      <span class="hint">Panel ka username hi daalein (e.g. ali) — tabhi kaam match hoga.</span>
+      <input type="text" id="employee" placeholder="e.g. ali" />
+    </label>
+    <label>Server token
+      <span class="hint">server/config.php ke API_TOKEN ke barabar.</span>
+      <input type="text" id="serverToken" placeholder="shared secret" />
+    </label>
+    <div class="row">
+      <button id="testServer">🔌 Test connection</button>
+    </div>
+    <div class="server-status" id="serverStatus"></div>
+  </div>
+
+  <label>Message template
+    <span class="hint">Tokens: {handle} {nickname} {first_name}</span>
+  </label>
+  <textarea id="template" rows="8"></textarea>
+
+  <div class="grid">
+    <label>Min delay (sec)
+      <input type="number" id="minDelay" min="30" />
+    </label>
+    <label>Max delay (sec)
+      <input type="number" id="maxDelay" min="30" />
+    </label>
+    <label>Daily cap
+      <input type="number" id="dailyCap" min="1" />
+    </label>
+  </div>
+  <label>Parallel tabs (pool size)
+    <span class="hint">Kitne tabs ek saath load hon (send phir bhi throttled). 2-3 recommended.</span>
+    <input type="number" id="concurrency" min="1" max="5" />
+  </label>
+
+  <button id="save">💾 Save settings</button>
+
+  <div class="row">
+    <button id="retryFailed">🔁 Retry failed</button>
+    <button id="clearQueue" class="danger-outline">🗑 Clear queue</button>
+  </div>
+  <div class="row">
+    <button id="clearSent" class="danger-outline">🧹 Reset "Messaged" highlights</button>
+  </div>
+
+  <h2>Activity log</h2>
+  <div class="log" id="log"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
