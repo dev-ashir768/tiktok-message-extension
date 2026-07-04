@@ -314,7 +314,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         // shared dedup guarantee breaks and duplicates could be messaged.
         sendResponse({
           ok: false,
-          error: "Server reachable nahi — dedup off, kuch add nahi kiya. Server URL/connection check karein.",
+          error: "Server unreachable — duplicate detection off, nothing added. Please check Server URL/connection.",
         });
         return;
       }

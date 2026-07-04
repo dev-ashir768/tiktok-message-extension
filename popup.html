@@ -16,15 +16,15 @@
 
   <div class="server-box">
     <label>Shared server URL (team sync)
-      <span class="hint">Sab employees ye same URL lagayein, e.g. http://192.168.1.50/server/api.php. Khali = local only.</span>
-      <input type="text" id="serverUrl" placeholder="http://HOST/server/api.php" />
+      <span class="hint">All employees must use the same URL, e.g. https://extension.tiksly.com/server/api.php. Leave blank for local only.</span>
+      <input type="text" id="serverUrl" placeholder="https://HOST/server/api.php" />
     </label>
     <label>Your name (employee)
-      <span class="hint">Panel ka username hi daalein (e.g. ali) — tabhi kaam match hoga.</span>
-      <input type="text" id="employee" placeholder="e.g. ali" />
+      <span class="hint">Enter your exact panel username (e.g. ashir) for your work tracking to match.</span>
+      <input type="text" id="employee" placeholder="e.g. ashir" />
     </label>
     <label>Server token
-      <span class="hint">server/config.php ke API_TOKEN ke barabar.</span>
+      <span class="hint">Must match the API_TOKEN set in server/config.php.</span>
       <input type="text" id="serverToken" placeholder="shared secret" />
     </label>
     <div class="row">
@@ -50,7 +50,7 @@
     </label>
   </div>
   <label>Parallel tabs (pool size)
-    <span class="hint">Kitne tabs ek saath load hon (send phir bhi throttled). 2-3 recommended.</span>
+    <span class="hint">Number of tabs to load in parallel (sending is still throttled). 2-3 recommended.</span>
     <input type="number" id="concurrency" min="1" max="5" />
   </label>
 

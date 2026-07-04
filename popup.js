@@ -10,7 +10,7 @@ async function refresh() {
     `Status: <b>${res.running ? "🟢 Running" : "⚪ Idle"}</b>` +
     (res.active ? ` · ${res.active} tabs loading` : "") +
     `<br>Queue pending: <b>${res.pending}</b> · Sent: <b>${res.sent}</b> · Failed: <b>${res.failed}</b><br>` +
-    `Aaj bheje gaye: <b>${res.sentToday}/${res.dailyCap}</b>`;
+    `Sent today: <b>${res.sentToday}/${res.dailyCap}</b>`;
 
   const tpl = document.getElementById("template");
   if (document.activeElement !== tpl && !tpl.dataset.dirty) tpl.value = res.settings.template;
@@ -70,14 +70,14 @@ document.getElementById("retryFailed").addEventListener("click", async () => {
 });
 
 document.getElementById("clearQueue").addEventListener("click", async () => {
-  if (confirm("Queue aur log dono clear ho jayenge. Sure?")) {
+  if (confirm("Queue and log will both be cleared. Are you sure?")) {
     await send({ type: "CLEAR_QUEUE" });
     refresh();
   }
 });
 
 document.getElementById("clearSent").addEventListener("click", async () => {
-  if (confirm('Sabhi "Messaged" highlights reset ho jayenge (server + local). Sure?')) {
+  if (confirm('All "Messaged" highlights will be reset (both on server and locally). Are you sure?')) {
     await send({ type: "CLEAR_SENT" });
     refresh();
   }

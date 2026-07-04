@@ -136,7 +136,7 @@
 
     panel.querySelector("#ttbm-add").addEventListener("click", () => {
       const creators = [...SELECTED].map((id) => ROW_DATA.get(id)).filter(Boolean);
-      if (!creators.length) return setStatus("Pehle creators select karein");
+      if (!creators.length) return setStatus("Please select creators first");
       chrome.runtime.sendMessage({ type: "ADD_TO_QUEUE", creators }, (res) => {
         if (res && res.ok) {
           const dup = res.rejected ? ` · ${res.rejected} already taken` : "";
