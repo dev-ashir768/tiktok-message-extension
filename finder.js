@@ -1,6 +1,12 @@
 // Runs on the "Find creators" page.
 // Injects a checkbox on every creator row and a floating panel to queue them.
 
+// Reload the page if the extension is unloaded/reloaded so stale injected UI is cleared.
+try {
+  const _port = chrome.runtime.connect({ name: "ttbm-keepalive" });
+  _port.onDisconnect.addListener(() => location.reload());
+} catch (_) {}
+
 (() => {
   const SELECTED = new Set(); // creator ids selected on this page session
   const ROW_DATA = new Map(); // creator id -> {id, handle, nickname}
