@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: index.php');
             exit;
         }
-        $error = 'Ghalat username ya password';
+        $error = 'Incorrect username or password';
     } catch (Throwable $e) {
         $error = 'DB error: ' . $e->getMessage();
     }

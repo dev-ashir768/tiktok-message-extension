@@ -13,14 +13,14 @@ if ($admin && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['do'] ?? '') === 
     $p = (string)($_POST['new_password'] ?? '');
     $role = ($_POST['new_role'] ?? 'staff') === 'admin' ? 'admin' : 'staff';
     if ($u === '' || strlen($p) < 4) {
-        $notice = 'Username chahiye aur password kam se kam 4 characters.';
+        $notice = 'Username is required and password must be at least 4 characters.';
     } else {
         try {
             $stmt = $pdo->prepare("INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)");
             $stmt->execute([$u, password_hash($p, PASSWORD_DEFAULT), $role]);
-            $notice = "User '$u' ($role) ban gaya. Extension mein 'Your name' = $u lagwayein.";
+            $notice = "User '$u' ($role) created successfully. Set 'Your name' to '$u' in the extension settings.";
         } catch (Throwable $e) {
-            $notice = 'Nahi bana (shayad username pehle se hai).';
+            $notice = 'Failed to create user (username might already exist).';
         }
     }
 }
@@ -95,7 +95,7 @@ $staffList = $admin
   <main>
     <?php if ($notice): ?><div class="alert ok"><?= h($notice) ?></div><?php endif; ?>
 
-    <h2><?= $admin ? ($filterEmp === '' ? 'Sab ka summary' : 'Summary: ' . h($filterEmp)) : 'Mera summary' ?></h2>
+    <h2><?= $admin ? ($filterEmp === '' ? 'Overall Summary' : 'Summary: ' . h($filterEmp)) : 'My Summary' ?></h2>
     <div class="cards">
       <div class="card queued"><span class="n"><?= $sum['queued'] ?></span>Queued</div>
       <div class="card sent"><span class="n"><?= $sum['sent'] ?></span>Sent</div>
@@ -118,12 +118,12 @@ $staffList = $admin
             <td><a href="?emp=<?= urlencode($emp) ?>">view</a></td>
           </tr>
         <?php endforeach; ?>
-        <?php if (!$perStaff): ?><tr><td colspan="6" class="muted">Abhi koi data nahi.</td></tr><?php endif; ?>
+        <?php if (!$perStaff): ?><tr><td colspan="6" class="muted">No data available yet.</td></tr><?php endif; ?>
         </tbody>
       </table>
 
       <details class="addstaff">
-        <summary>➕ Naya staff/admin add karein</summary>
+        <summary>➕ Add new staff or admin</summary>
         <form method="post" class="inline-form">
           <input type="hidden" name="do" value="add_staff" />
           <input name="new_username" placeholder="username (e.g. ali)" required />
@@ -131,7 +131,7 @@ $staffList = $admin
           <select name="new_role"><option value="staff">staff</option><option value="admin">admin</option></select>
           <button type="submit">Add</button>
         </form>
-        <p class="hint">Note: staff apna panel username hi extension ke "Your name" field mein daale — tabhi kaam match hoga.</p>
+        <p class="hint">Note: Staff members must enter their exact panel username in the extension's "Your name" field for their tracking to match.</p>
       </details>
     <?php endif; ?>
 
@@ -166,7 +166,7 @@ $staffList = $admin
           <td class="muted"><?= h($r['updated_at']) ?></td>
         </tr>
       <?php endforeach; ?>
-      <?php if (!$records): ?><tr><td colspan="5" class="muted">Koi record nahi.</td></tr><?php endif; ?>
+      <?php if (!$records): ?><tr><td colspan="5" class="muted">No records found.</td></tr><?php endif; ?>
       </tbody>
     </table>
   </main>
