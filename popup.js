@@ -85,6 +85,13 @@ document.getElementById("clearSent").addEventListener("click", async () => {
 
 document.getElementById("testServer").addEventListener("click", async () => {
   const el = document.getElementById("serverStatus");
+  const url = document.getElementById("serverUrl").value.trim();
+  const tok = document.getElementById("serverToken").value.trim();
+  if (!url || !tok) {
+    el.textContent = "❌ Enter Server URL and token first";
+    el.className = "server-status err";
+    return;
+  }
   el.textContent = "Testing…";
   // Save current URL/name first so the test uses them.
   await send({

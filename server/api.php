@@ -37,13 +37,11 @@ if (!is_array($req)) {
 $action = $req['action'] ?? '';
 $employee = substr((string)($req['employee'] ?? 'unknown'), 0, 64);
 
-// Token gate: every action except ping must carry the shared secret.
-if ($action !== 'ping') {
-    $token = (string)($req['token'] ?? '');
-    if (!hash_equals(API_TOKEN, $token)) {
-        http_response_code(401);
-        out(['ok' => false, 'error' => 'unauthorized (bad or missing token)']);
-    }
+// Token gate: all actions including ping must carry the shared secret.
+$token = (string)($req['token'] ?? '');
+if (!hash_equals(API_TOKEN, $token)) {
+    http_response_code(401);
+    out(['ok' => false, 'error' => 'unauthorized (bad or missing token)']);
 }
 
 try {
