@@ -1,14 +1,28 @@
 // Runs on the "Find creators" page.
 // Injects a checkbox on every creator row and a floating panel to queue them.
 
-// Reload the page if the extension is unloaded/reloaded so stale injected UI is cleared.
-// Only reload if the port was alive for at least 2s — avoids reload loops on first install
-// when the service worker hasn't warmed up yet.
+// Reload the page only when the extension is actually removed/disabled —
+// NOT when the service worker goes idle (Chrome kills idle SWs to save memory).
+// Distinguish: if extension is still installed, chrome.runtime.connect() works after disconnect.
+// If extension is removed, it throws "Extension context invalidated".
 try {
   const _port = chrome.runtime.connect({ name: "ttbm-keepalive" });
   let _alive = false;
-  setTimeout(() => { _alive = true; }, 2000);
-  _port.onDisconnect.addListener(() => { if (_alive) location.reload(); });
+  setTimeout(() => { _alive = true; }, 3000);
+  _port.onDisconnect.addListener(() => {
+    if (!_alive) return;
+    // Give SW 1s to restart (idle → wake), then check if extension still exists.
+    setTimeout(() => {
+      try {
+        // If this succeeds, SW was just idle — disconnect immediately, no reload.
+        const probe = chrome.runtime.connect({ name: "ttbm-probe" });
+        probe.disconnect();
+      } catch (_) {
+        // Extension context invalidated = extension removed/disabled → clean up page.
+        location.reload();
+      }
+    }, 1000);
+  });
 } catch (_) {}
 
 (() => {
