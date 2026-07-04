@@ -179,11 +179,9 @@ button.danger-outline:hover { background: rgba(248,113,113,0.12); border-color: 
 
 .server-box label {
   display: block;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text2);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
   margin-bottom: 10px;
 }
 
