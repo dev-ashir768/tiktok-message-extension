@@ -67,9 +67,45 @@
     return true; // async response
   });
 
+  // MutationObserver-based wait — not throttled in background tabs (Windows fix).
+  function waitForElement(checkFn, timeoutMs) {
+    return new Promise((resolve) => {
+      const existing = checkFn();
+      if (existing) return resolve(existing);
+
+      let settled = false;
+      const settle = (val) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        observer.disconnect();
+        resolve(val);
+      };
+
+      const observer = new MutationObserver(() => {
+        const v = checkFn();
+        if (v) settle(v);
+      });
+      observer.observe(document.body || document.documentElement, {
+        childList: true, subtree: true, attributes: true, characterData: true,
+      });
+
+      // Slow fallback poll for cases MutationObserver misses.
+      const poll = setInterval(() => {
+        const v = checkFn();
+        if (v) { clearInterval(poll); settle(v); }
+      }, 2000);
+
+      const timer = setTimeout(() => { clearInterval(poll); settle(null); }, timeoutMs);
+    });
+  }
+
   async function run() {
     // Wait for the chat pane + the MAIN-world bridge. Bail on server error.
-    const ready = await waitFor(() => getTextarea() || serverError(), 75000);
+    const ready = await waitForElement(
+      () => getTextarea() || serverError() || null,
+      90000
+    );
     if (!ready || serverError()) {
       chrome.runtime.sendMessage({
         type: "CHAT_FATAL",
@@ -77,8 +113,11 @@
       });
       return;
     }
-    await waitFor(() => document.documentElement.dataset.ttbmMain === "1", 10000);
-    await sleep(800);
+    await waitForElement(
+      () => document.documentElement.dataset.ttbmMain === "1" ? true : null,
+      15000
+    );
+    await sleep(500);
 
     // Announce readiness; the background will DO_SEND when the slot opens.
     chrome.runtime.sendMessage({ type: "CHAT_READY" });
