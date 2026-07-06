@@ -137,11 +137,47 @@
     return true; // optimistic — let textarea-clear check decide success
   }
 
+  // Try to open the creator's chat by clicking them in the sidebar.
+  // Needed when creator_id URL param doesn't auto-open on some browsers/OS.
+  function tryOpenCreatorInSidebar() {
+    const creatorId = new URLSearchParams(location.search).get("creator_id");
+    if (!creatorId) return false;
+
+    // Look for any sidebar/list item that contains the creator_id in a data attr or href.
+    const candidates = [
+      ...document.querySelectorAll('[data-creator-id]'),
+      ...document.querySelectorAll(`[href*="${creatorId}"]`),
+      ...document.querySelectorAll(`[data-id="${creatorId}"]`),
+    ];
+    if (candidates.length > 0) {
+      candidates[0].click();
+      return true;
+    }
+
+    // Fallback: look for any clickable list item in the IM sidebar.
+    const listItems = document.querySelectorAll(
+      '.conversation-item, .im-list-item, [class*="conversationItem"], [class*="listItem"], [class*="chat-item"]'
+    );
+    if (listItems.length > 0) {
+      listItems[0].click();
+      return true;
+    }
+    return false;
+  }
+
   async function send(text) {
     const fatal = getFatalState();
     if (fatal) return { success: false, detail: fatal };
 
-    const ta = await waitForChat(90000); // extended for slow Windows machines
+    // First attempt: wait for textarea to appear (auto-open via URL param).
+    let ta = await waitForChat(30000);
+
+    // If not opened, try clicking the creator in the sidebar and wait again.
+    if (!ta) {
+      tryOpenCreatorInSidebar();
+      ta = await waitForChat(60000);
+    }
+
     if (!ta) {
       return { success: false, detail: getFatalState() || "chat did not open in time (creator unreachable or 5-msg limit)" };
     }
