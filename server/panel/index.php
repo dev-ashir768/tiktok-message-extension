@@ -56,6 +56,53 @@ if ($admin) {
     ksort($perStaff);
 }
 
+// --- Daily activity: date range filter ------------------------------------
+function validDate($s) {
+    return preg_match('/^\d{4}-\d{2}-\d{2}$/', $s) ? $s : null;
+}
+$drFrom = validDate($_GET['dr_from'] ?? '') ?: date('Y-m-d', strtotime('-30 days'));
+$drTo   = validDate($_GET['dr_to']   ?? '') ?: date('Y-m-d');
+if ($drFrom > $drTo) [$drFrom, $drTo] = [$drTo, $drFrom];
+
+// --- Daily activity: sent per staff per day --------------------------------
+$dailyStats = [];
+if ($admin) {
+    $empWhere = $filterEmp !== '' ? "AND employee = ?" : '';
+    $sql = "SELECT employee, DATE(updated_at) AS day, COUNT(*) AS c
+            FROM creators
+            WHERE status = 'sent'
+              AND DATE(updated_at) BETWEEN ? AND ?
+              $empWhere
+            GROUP BY employee, DATE(updated_at)
+            ORDER BY day DESC, employee ASC";
+    $p = [$drFrom, $drTo];
+    if ($filterEmp !== '') $p[] = $filterEmp;
+    $rows = $pdo->prepare($sql);
+    $rows->execute($p);
+    foreach ($rows->fetchAll() as $r) {
+        $dailyStats[$r['day']][$r['employee']] = (int)$r['c'];
+    }
+} else {
+    $rows = $pdo->prepare(
+        "SELECT DATE(updated_at) AS day, COUNT(*) AS c
+         FROM creators
+         WHERE status = 'sent' AND employee = ?
+           AND DATE(updated_at) BETWEEN ? AND ?
+         GROUP BY DATE(updated_at)
+         ORDER BY day DESC"
+    );
+    $rows->execute([$me['username'], $drFrom, $drTo]);
+    foreach ($rows->fetchAll() as $r) {
+        $dailyStats[$r['day']][$me['username']] = (int)$r['c'];
+    }
+}
+$dailyStaff = [];
+foreach ($dailyStats as $empMap) {
+    foreach (array_keys($empMap) as $e) $dailyStaff[$e] = true;
+}
+ksort($dailyStaff);
+$dailyTotal = array_sum(array_map('array_sum', $dailyStats));
+
 // --- Records ---------------------------------------------------------------
 $statusFilter = in_array($_GET['status'] ?? '', ['queued', 'sent', 'failed'], true) ? $_GET['status'] : '';
 $where  = [];
@@ -275,6 +322,108 @@ $staffList = $admin
         </details>
       <?php endif; ?>
 
+      <!-- Daily activity table -->
+      <p class="section-title" style="margin-top:28px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        Daily Activity — Messages Sent
+      </p>
+
+      <!-- Date range picker (native inputs) -->
+      <form class="dr-toolbar" method="get" action="" id="dr-form">
+        <?php if ($filterEmp !== ''): ?>
+          <input type="hidden" name="emp" value="<?= h($filterEmp) ?>" />
+        <?php endif; ?>
+
+        <div class="dr-presets">
+          <span class="dr-presets-label">Quick select</span>
+          <button type="button" class="dr-preset" data-days="7">Last 7 days</button>
+          <button type="button" class="dr-preset" data-days="30">Last 30 days</button>
+          <button type="button" class="dr-preset" data-days="90">Last 90 days</button>
+          <button type="button" class="dr-preset" data-month="current">This month</button>
+          <button type="button" class="dr-preset" data-month="prev">Last month</button>
+        </div>
+
+        <div class="dr-inputs">
+          <div class="dr-field">
+            <label for="dr_from">From</label>
+            <input type="date" name="dr_from" id="dr_from" value="<?= h($drFrom) ?>" max="<?= date('Y-m-d') ?>" />
+          </div>
+          <span class="dr-sep">—</span>
+          <div class="dr-field">
+            <label for="dr_to">To</label>
+            <input type="date" name="dr_to" id="dr_to" value="<?= h($drTo) ?>" max="<?= date('Y-m-d') ?>" />
+          </div>
+          <button type="submit" class="dr-apply">Apply</button>
+          <div class="dr-summary">
+            <span><?= h($drFrom) ?> → <?= h($drTo) ?></span>
+            <span class="dr-summary-badge"><?= $dailyTotal ?> sent</span>
+          </div>
+        </div>
+      </form>
+
+      <?php if ($dailyStats): ?>
+      <div class="table-wrap" style="margin-bottom:14px;overflow-x:auto;">
+        <table class="grid">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <?php if ($admin): ?>
+                <?php foreach (array_keys($dailyStaff) as $e): ?>
+                  <th><?= h($e) ?></th>
+                <?php endforeach; ?>
+                <th style="color:#60a5fa;">Total</th>
+              <?php else: ?>
+                <th>Sent</th>
+              <?php endif; ?>
+            </tr>
+          </thead>
+          <tbody>
+            <?php
+            $grandTotal = 0;
+            $colTotals  = [];
+            foreach ($dailyStats as $day => $empMap):
+              $dayTotal = array_sum($empMap);
+              $grandTotal += $dayTotal;
+              foreach ($empMap as $e => $c) $colTotals[$e] = ($colTotals[$e] ?? 0) + $c;
+            ?>
+              <tr>
+                <td style="font-weight:600;white-space:nowrap;"><?= h($day) ?></td>
+                <?php if ($admin): ?>
+                  <?php foreach (array_keys($dailyStaff) as $e): ?>
+                    <td class="<?= ($empMap[$e] ?? 0) > 0 ? 'g' : 'muted' ?>">
+                      <?= $empMap[$e] ?? 0 ?>
+                    </td>
+                  <?php endforeach; ?>
+                  <td style="font-weight:700;color:#60a5fa;"><?= $dayTotal ?></td>
+                <?php else: ?>
+                  <td class="g"><?= $dayTotal ?></td>
+                <?php endif; ?>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+          <tfoot>
+            <tr style="border-top:2px solid #1e293b;">
+              <td style="font-weight:700;">Total</td>
+              <?php if ($admin): ?>
+                <?php foreach (array_keys($dailyStaff) as $e): ?>
+                  <td style="font-weight:700;color:#e2e8f0;"><?= $colTotals[$e] ?? 0 ?></td>
+                <?php endforeach; ?>
+                <td style="font-weight:800;color:#60a5fa;font-size:15px;"><?= $grandTotal ?></td>
+              <?php else: ?>
+                <td style="font-weight:800;color:#34d399;"><?= $grandTotal ?></td>
+              <?php endif; ?>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <?php else: ?>
+        <div class="dt-empty" style="display:block;margin-bottom:14px;">No messages sent in this date range.</div>
+      <?php endif; ?>
+
       <!-- Records table -->
       <p class="section-title" style="margin-top:28px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -467,6 +616,29 @@ $staffList = $admin
   });
 
   render();
+
+  // Date range preset buttons
+  const fmt = d => d.toISOString().slice(0, 10);
+  document.querySelectorAll('.dr-preset').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const today = new Date(); today.setHours(0,0,0,0);
+      let from, to = new Date(today);
+      if (btn.dataset.days) {
+        from = new Date(today);
+        from.setDate(today.getDate() - parseInt(btn.dataset.days) + 1);
+      } else if (btn.dataset.month === 'current') {
+        from = new Date(today.getFullYear(), today.getMonth(), 1);
+      } else if (btn.dataset.month === 'prev') {
+        const y = today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
+        const m = today.getMonth() === 0 ? 11 : today.getMonth() - 1;
+        from = new Date(y, m, 1);
+        to   = new Date(y, m + 1, 0);
+      }
+      document.getElementById('dr_from').value = fmt(from);
+      document.getElementById('dr_to').value   = fmt(to);
+      document.getElementById('dr-form').submit();
+    });
+  });
 
   // Auto-refresh page data every 30 s without full reload flicker
   setTimeout(() => location.reload(), 30000);

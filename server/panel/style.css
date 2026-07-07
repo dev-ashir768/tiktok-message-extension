@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
 /* ── Reset & base ───────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -511,6 +509,103 @@ a:hover { color: #2dd4bf; }
   border-top: 1px solid var(--border); margin-top: 48px;
 }
 .page-footer a { color: var(--teal); }
+
+/* ── Date range picker ───────────────────────────────────────────────────── */
+.dr-toolbar {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.dr-presets {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: 6px; padding: 10px 16px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+}
+
+.dr-presets-label {
+  font-size: 11px; font-weight: 700; color: var(--text3);
+  text-transform: uppercase; letter-spacing: .06em;
+  margin-right: 4px; flex-shrink: 0;
+}
+
+.dr-preset {
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  font-size: 12px; font-weight: 500;
+  padding: 4px 13px; border-radius: 20px;
+  cursor: pointer; transition: all .15s;
+  font-family: inherit;
+}
+.dr-preset:hover {
+  background: var(--blue); border-color: var(--blue);
+  color: #fff;
+}
+
+.dr-inputs {
+  display: flex; align-items: flex-end;
+  flex-wrap: wrap; gap: 10px;
+  padding: 14px 16px;
+}
+
+.dr-field {
+  display: flex; flex-direction: column; gap: 5px;
+}
+.dr-field label {
+  font-size: 11px; font-weight: 700; color: var(--text3);
+  text-transform: uppercase; letter-spacing: .06em;
+}
+.dr-field input[type="date"] {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 13px; font-weight: 500;
+  padding: 8px 12px;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+  color-scheme: dark;
+  transition: border-color .15s, box-shadow .15s;
+  height: 38px;
+}
+.dr-field input[type="date"]:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px var(--blue-glow);
+}
+
+.dr-sep {
+  color: var(--text3); font-size: 18px;
+  padding-bottom: 6px; flex-shrink: 0;
+}
+
+.dr-apply {
+  background: var(--blue);
+  border: none; color: #fff;
+  font-size: 13px; font-weight: 600;
+  padding: 0 20px; height: 38px;
+  border-radius: 8px;
+  cursor: pointer; transition: background .15s;
+  font-family: inherit; white-space: nowrap;
+}
+.dr-apply:hover { background: var(--blue-dim); }
+
+.dr-summary {
+  margin-left: auto;
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--text2);
+  white-space: nowrap; padding-bottom: 4px;
+}
+.dr-summary-badge {
+  background: rgba(59,130,246,.15);
+  color: var(--blue);
+  font-size: 13px; font-weight: 700;
+  padding: 3px 12px; border-radius: 20px;
+}
 
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
